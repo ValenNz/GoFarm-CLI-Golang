@@ -1,4 +1,3 @@
-```markdown
 # Sistem Manajemen Peternakan Sapi Potong (Go CLI)
 
 ![Go Version](https://img.shields.io/badge/go-%3E%3D1.18-blue)
@@ -73,4 +72,3 @@ Pull request dipersilakan. Untuk perubahan besar, buka issue terlebih dahulu.
 
 ## 📜 Lisensi
 MIT © 2025 ValenNz
-```
