@@ -3,10 +3,12 @@ package main
 import (
 	"fmt"
 	"strings"
+	"time"
 )
 
 const Maks = 100
 
+/* Struct */
 type Sapi struct {
 	id     string
 	nama   string
@@ -26,8 +28,10 @@ type Kesehatan struct {
 	diagnosa string
 }
 
+/* Variabel Global */
 var dataSapi [Maks]Sapi
 var jumlahSapi int
+var idTerakhir int
 
 var dataPakan [Maks]Pakan
 var jumlahPakan int
@@ -107,6 +111,7 @@ func menuManajemenPakan() {
 		fmt.Println("[2] Tampilkan Semua Pakan")
 		fmt.Println("[3] Urutkan Pakan berdasarkan Harga")
 		fmt.Println("[4] Update Stok Pakan")
+		fmt.Println("[5] Hapus Pakan")
 		fmt.Println("[0] Kembali")
 		fmt.Print("Pilih menu: ")
 		fmt.Scan(&pilihan)
@@ -119,6 +124,8 @@ func menuManajemenPakan() {
 			urutkanPakanByHarga()
 		} else if pilihan == 4 {
 			updateStokPakan()
+		} else if pilihan == 5 {
+			hapusPakan()
 		} else if pilihan == 0 {
 			return
 		} else {
@@ -160,31 +167,38 @@ func tambahSapi() {
 	}
 
 	var sapi Sapi
-	fmt.Print("ID: ")
-	fmt.Scan(&sapi.id)
+	idTerakhir++
+	sapi.id = fmt.Sprintf("S%03d", idTerakhir)
 
-	// Cek apakah ID sudah ada
 	for i := 0; i < jumlahSapi; i++ {
 		if dataSapi[i].id == sapi.id {
-			fmt.Println("ID sapi sudah ada.")
+			fmt.Println("Terjadi duplikasi ID, coba lagi.")
 			return
 		}
 	}
 
+	fmt.Printf("ID otomatis: %s\n", sapi.id)
 	fmt.Print("Nama: ")
 	fmt.Scan(&sapi.nama)
-	fmt.Print("Berat (kg): ")
-	fmt.Scan(&sapi.berat)
 
-	// Validasi status
+	// Validasi berat dengan loop sampai input valid
 	for {
-		fmt.Print("Status (Pedet/Grower/Siap Potong): ")
-		fmt.Scan(&sapi.status)
-		sapi.status = strings.ToLower(sapi.status)
-		if sapi.status == "pedet" || sapi.status == "grower" || sapi.status == "siap potong" {
+		fmt.Print("Berat (kg): ")
+		fmt.Scan(&sapi.berat)
+		if sapi.berat <= 0 {
+			fmt.Println("Berat tidak valid")
+		} else {
 			break
 		}
-		fmt.Println("Status tidak valid. Harus Pedet, Grower, atau Siap Potong.")
+	}
+
+	// Tentukan status berdasarkan berat
+	if sapi.berat < 100 {
+		sapi.status = "pedet"
+	} else if sapi.berat < 250 {
+		sapi.status = "grower"
+	} else {
+		sapi.status = "siap potong"
 	}
 
 	dataSapi[jumlahSapi] = sapi
@@ -206,102 +220,68 @@ func tampilkanSapi() {
 	}
 }
 
-func urutkanSapiByBerat() {
-	if jumlahSapi == 0 {
-		fmt.Println("Belum ada data sapi.")
-		return
-	}
-
-	var asc int
-	fmt.Print("Urutkan Ascending (1) atau Descending (0)? ")
-	fmt.Scan(&asc)
-
-	for i := 0; i < jumlahSapi-1; i++ {
-		extremeIdx := i
-		for j := i + 1; j < jumlahSapi; j++ {
-			if (asc == 1 && dataSapi[j].berat < dataSapi[extremeIdx].berat) ||
-				(asc == 0 && dataSapi[j].berat > dataSapi[extremeIdx].berat) {
-				extremeIdx = j
-			}
-		}
-		dataSapi[i], dataSapi[extremeIdx] = dataSapi[extremeIdx], dataSapi[i]
-	}
-
-	fmt.Println("Data sapi telah diurutkan.")
-	tampilkanSapi()
-}
-
-func cariSapiByID() {
-	if jumlahSapi == 0 {
-		fmt.Println("Belum ada data sapi.")
-		return
-	}
-
-	var id string
-	fmt.Print("Masukkan ID sapi: ")
-	fmt.Scan(&id)
-
-	found := false
-	for i := 0; i < jumlahSapi; i++ {
-		if dataSapi[i].id == id {
-			fmt.Println("\nData ditemukan:")
-			fmt.Printf("%-8s %-15s %-8s %-15s\n", "ID", "Nama", "Berat", "Status")
-			fmt.Printf("%-8s %-15s %-8d %-15s\n",
-				dataSapi[i].id, dataSapi[i].nama, dataSapi[i].berat, dataSapi[i].status)
-			found = true
-			break
-		}
-	}
-
-	if !found {
-		fmt.Println("Sapi tidak ditemukan.")
-	}
-}
-
-func cariSapiByStatus() {
-	if jumlahSapi == 0 {
-		fmt.Println("Belum ada data sapi.")
-		return
-	}
-
-	var status string
-	fmt.Print("Masukkan status (Pedet/Grower/Siap Potong): ")
-	fmt.Scan(&status)
-	status = strings.ToLower(status)
-
-	fmt.Printf("\nDaftar Sapi dengan status '%s':\n", status)
-	fmt.Printf("%-8s %-15s %-8s\n", "ID", "Nama", "Berat")
-	found := false
-	for i := 0; i < jumlahSapi; i++ {
-		if strings.ToLower(dataSapi[i].status) == status {
-			fmt.Printf("%-8s %-15s %-8d\n",
-				dataSapi[i].id, dataSapi[i].nama, dataSapi[i].berat)
-			found = true
-		}
-	}
-
-	if !found {
-		fmt.Println("Tidak ada sapi dengan status tersebut.")
-	}
-}
-
+/* Insertion Sort Dan Binary Search*/
 func editSapi() {
 	if jumlahSapi == 0 {
 		fmt.Println("Belum ada data sapi.")
 		return
 	}
 
+	urutkanSapiByID := func() {
+		for i := 1; i < jumlahSapi; i++ {
+			key := dataSapi[i]
+			j := i - 1
+			for j >= 0 && strings.ToUpper(dataSapi[j].id) > strings.ToUpper(key.id) {
+				dataSapi[j+1] = dataSapi[j]
+				j--
+			}
+			dataSapi[j+1] = key
+		}
+	}
+
+	binarySearchSapiByID := func(id string) int {
+		low := 0
+		high := jumlahSapi - 1
+		id = strings.ToUpper(id)
+
+		for low <= high {
+			mid := (low + high) / 2
+			midID := strings.ToUpper(dataSapi[mid].id)
+
+			if midID == id {
+				return mid
+			} else if midID < id {
+				low = mid + 1
+			} else {
+				high = mid - 1
+			}
+		}
+		return -1
+	}
+
+	// konversi string ke int manual, return -1 jika ada karakter bukan digit
+	toInt := func(s string) int {
+		result := 0
+		if len(s) == 0 {
+			return -1
+		}
+		for i := 0; i < len(s); i++ {
+			if s[i] < '0' || s[i] > '9' {
+				return -1
+			}
+			result = result*10 + int(s[i]-'0')
+		}
+		return result
+	}
+
+	urutkanSapiByID()
+
 	var id string
 	fmt.Print("Masukkan ID sapi yang akan diedit: ")
 	fmt.Scan(&id)
+	id = strings.ToUpper(strings.TrimSpace(id))
 
-	idx := -1
-	for i := 0; i < jumlahSapi; i++ {
-		if dataSapi[i].id == id {
-			idx = i
-			break
-		}
-	}
+	idx := binarySearchSapiByID(id)
 
 	if idx == -1 {
 		fmt.Println("Sapi tidak ditemukan.")
@@ -313,36 +293,45 @@ func editSapi() {
 	fmt.Printf("%-8s %-15s %-8d %-15s\n",
 		dataSapi[idx].id, dataSapi[idx].nama, dataSapi[idx].berat, dataSapi[idx].status)
 
-	fmt.Println("\nMasukkan data baru (kosongkan jika tidak ingin mengubah):")
+	fmt.Println("\nMasukkan data baru (ketik '-' jika tidak ingin mengubah):")
 
 	var input string
 
+	// Edit Nama
 	fmt.Printf("Nama [%s]: ", dataSapi[idx].nama)
 	fmt.Scan(&input)
-	if input != "" {
+	input = strings.TrimSpace(input)
+	if input != "-" && input != "" {
 		dataSapi[idx].nama = input
 	}
 
-	fmt.Printf("Berat [%d]: ", dataSapi[idx].berat)
-	fmt.Scan(&input)
-	if input != "" {
-		var newBerat int
-		fmt.Sscanf(input, "%d", &newBerat)
-		dataSapi[idx].berat = newBerat
-	}
-
+	// Edit Berat dengan validasi manual
 	for {
-		fmt.Printf("Status [%s]: ", dataSapi[idx].status)
+		fmt.Printf("Berat [%d]: ", dataSapi[idx].berat)
 		fmt.Scan(&input)
-		if input == "" {
+		input = strings.TrimSpace(input)
+
+		if input == "-" || input == "" {
+			// batal ubah berat atau tidak diubah
 			break
 		}
-		input = strings.ToLower(input)
-		if input == "pedet" || input == "grower" || input == "siap potong" {
-			dataSapi[idx].status = input
-			break
+
+		beratBaru := toInt(input)
+		if beratBaru == -1 || beratBaru <= 0 {
+			fmt.Println("Berat tidak valid. Masukkan angka positif atau '-' untuk batal.")
+			continue
 		}
-		fmt.Println("Status tidak valid. Harus Pedet, Grower, atau Siap Potong.")
+
+		dataSapi[idx].berat = beratBaru
+
+		if beratBaru < 100 {
+			dataSapi[idx].status = "pedet"
+		} else if beratBaru < 200 {
+			dataSapi[idx].status = "grower"
+		} else {
+			dataSapi[idx].status = "siap potong"
+		}
+		break
 	}
 
 	fmt.Println("Data sapi berhasil diperbarui.")
@@ -354,17 +343,51 @@ func hapusSapi() {
 		return
 	}
 
+	// Fungsi internal untuk mengurutkan dataSapi berdasarkan ID (Insertion Sort)
+	urutkanSapiByID := func() {
+		for i := 1; i < jumlahSapi; i++ {
+			key := dataSapi[i]
+			j := i - 1
+			for j >= 0 && strings.ToUpper(dataSapi[j].id) > strings.ToUpper(key.id) {
+				dataSapi[j+1] = dataSapi[j]
+				j--
+			}
+			dataSapi[j+1] = key
+		}
+	}
+
+	// Fungsi internal binary search tanpa break
+	binarySearchSapiByID := func(id string) int {
+		low := 0
+		high := jumlahSapi - 1
+		id = strings.ToUpper(id)
+
+		for low <= high {
+			mid := (low + high) / 2
+			midID := strings.ToUpper(dataSapi[mid].id)
+
+			if midID == id {
+				return mid
+			} else if midID < id {
+				low = mid + 1
+			} else {
+				high = mid - 1
+			}
+		}
+		return -1
+	}
+
+	// Urutkan data sapi dulu
+	urutkanSapiByID()
+
+	// Input ID yang ingin dihapus
 	var id string
 	fmt.Print("Masukkan ID sapi yang akan dihapus: ")
 	fmt.Scan(&id)
+	id = strings.ToUpper(strings.TrimSpace(id))
 
-	idx := -1
-	for i := 0; i < jumlahSapi; i++ {
-		if dataSapi[i].id == id {
-			idx = i
-			break
-		}
-	}
+	// Cari dengan binary search
+	idx := binarySearchSapiByID(id)
 
 	if idx == -1 {
 		fmt.Println("Sapi tidak ditemukan.")
@@ -403,8 +426,113 @@ func hapusSapi() {
 	}
 }
 
+/* Selection Sort */
+func urutkanSapiByBerat() {
+	if jumlahSapi == 0 {
+		fmt.Println("Belum ada data sapi.")
+		return
+	}
+
+	var asc int
+	fmt.Print("Urutkan Ascending (1) atau Descending (0)? ")
+	fmt.Scan(&asc)
+
+	for i := 0; i < jumlahSapi-1; i++ {
+		extremeIdx := i
+		for j := i + 1; j < jumlahSapi; j++ {
+			if (asc == 1 && dataSapi[j].berat < dataSapi[extremeIdx].berat) ||
+				(asc == 0 && dataSapi[j].berat > dataSapi[extremeIdx].berat) {
+				extremeIdx = j
+			}
+		}
+		dataSapi[i], dataSapi[extremeIdx] = dataSapi[extremeIdx], dataSapi[i]
+	}
+
+	fmt.Println("Data sapi telah diurutkan.")
+	tampilkanSapi()
+}
+
+/*  Sequential Search */
+func cariSapiByID() {
+	if jumlahSapi == 0 {
+		fmt.Println("Belum ada data sapi.")
+		return
+	}
+
+	var id string
+	fmt.Print("Masukkan ID sapi: ")
+	fmt.Scan(&id)
+	id = strings.ToUpper(id)
+
+	found := false
+	fmt.Println("\nHasil pencarian:")
+	fmt.Printf("%-8s %-15s %-8s %-15s\n", "ID", "Nama", "Berat", "Status")
+
+	for i := 0; i < jumlahSapi; i++ {
+		if strings.ToUpper(dataSapi[i].id) == id {
+			fmt.Printf("%-8s %-15s %-8d %-15s\n",
+				dataSapi[i].id, dataSapi[i].nama, dataSapi[i].berat, dataSapi[i].status)
+			found = true
+		}
+	}
+
+	if !found {
+		fmt.Println("Sapi tidak ditemukan.")
+	}
+}
+
+/* Sequential Search */
+func cariSapiByStatus() {
+	if jumlahSapi == 0 {
+		fmt.Println("Belum ada data sapi.")
+		return
+	}
+
+	var status string
+	fmt.Print("Masukkan status (Pedet/Grower/Siap Potong): ")
+	fmt.Scan(&status)
+	status = strings.ToLower(status)
+
+	fmt.Printf("\nDaftar Sapi dengan status '%s':\n", status)
+	fmt.Printf("%-8s %-15s %-8s\n", "ID", "Nama", "Berat")
+	found := false
+	for i := 0; i < jumlahSapi; i++ {
+		if strings.ToLower(dataSapi[i].status) == status {
+			fmt.Printf("%-8s %-15s %-8d\n",
+				dataSapi[i].id, dataSapi[i].nama, dataSapi[i].berat)
+			found = true
+		}
+	}
+
+	if !found {
+		fmt.Println("Tidak ada sapi dengan status tersebut.")
+	}
+}
+
 // ========== FUNGSI MANAJEMEN PAKAN ==========
 func tambahPakan() {
+	// Helper untuk cek apakah string hanya angka 0-9
+	isDigitOnly := func(s string) bool {
+		if len(s) == 0 {
+			return false
+		}
+		for i := 0; i < len(s); i++ {
+			if s[i] < '0' || s[i] > '9' {
+				return false
+			}
+		}
+		return true
+	}
+
+	// Helper untuk konversi string angka ke int secara manual
+	toInt := func(s string) int {
+		result := 0
+		for i := 0; i < len(s); i++ {
+			result = result*10 + int(s[i]-'0')
+		}
+		return result
+	}
+
 	if jumlahPakan >= Maks {
 		fmt.Println("Kapasitas data pakan penuh.")
 		return
@@ -413,10 +541,30 @@ func tambahPakan() {
 	var pakan Pakan
 	fmt.Print("Nama Pakan: ")
 	fmt.Scan(&pakan.nama)
-	fmt.Print("Harga: ")
-	fmt.Scan(&pakan.harga)
-	fmt.Print("Stok: ")
-	fmt.Scan(&pakan.stok)
+
+	for {
+		fmt.Print("Harga: ")
+		var input string
+		fmt.Scan(&input)
+		if isDigitOnly(input) {
+			pakan.harga = toInt(input)
+			break
+		} else {
+			fmt.Println("Harga tidak valid. Masukkan angka positif atau nol.")
+		}
+	}
+
+	for {
+		fmt.Print("Stok: ")
+		var input string
+		fmt.Scan(&input)
+		if isDigitOnly(input) {
+			pakan.stok = toInt(input)
+			break
+		} else {
+			fmt.Println("Stok tidak valid. Masukkan angka positif atau nol.")
+		}
+	}
 
 	dataPakan[jumlahPakan] = pakan
 	jumlahPakan++
@@ -437,6 +585,187 @@ func tampilkanPakan() {
 	}
 }
 
+/* Insertion Sort Dan Binary Search*/
+func updateStokPakan() {
+	if jumlahPakan == 0 {
+		fmt.Println("Belum ada data pakan.")
+		return
+	}
+
+	// Fungsi internal untuk mengurutkan dataPakan berdasarkan nama pakan (Insertion Sort)
+	urutkanPakanByNama := func() {
+		for i := 1; i < jumlahPakan; i++ {
+			key := dataPakan[i]
+			j := i - 1
+			for j >= 0 && strings.ToUpper(dataPakan[j].nama) > strings.ToUpper(key.nama) {
+				dataPakan[j+1] = dataPakan[j]
+				j--
+			}
+			dataPakan[j+1] = key
+		}
+	}
+
+	// Fungsi internal binary search berdasarkan nama pakan (case-insensitive)
+	binarySearchPakanByNama := func(nama string) int {
+		low := 0
+		high := jumlahPakan - 1
+		nama = strings.ToUpper(nama)
+
+		for low <= high {
+			mid := (low + high) / 2
+			midNama := strings.ToUpper(dataPakan[mid].nama)
+
+			if midNama == nama {
+				return mid
+			} else if midNama < nama {
+				low = mid + 1
+			} else {
+				high = mid - 1
+			}
+		}
+		return -1
+	}
+
+	// Helper untuk konversi string ke int manual, mengembalikan -1 jika ada karakter non-digit
+	toInt := func(s string) int {
+		result := 0
+		for i := 0; i < len(s); i++ {
+			if s[i] < '0' || s[i] > '9' {
+				return -1 // invalid input
+			}
+			result = result*10 + int(s[i]-'0')
+		}
+		return result
+	}
+
+	// Urutkan dulu data pakan
+	urutkanPakanByNama()
+
+	// Tampilkan data pakan
+	tampilkanPakan()
+
+	// Input nama pakan yang akan diupdate
+	var namaPakan string
+	fmt.Print("\nMasukkan nama pakan yang akan diupdate: ")
+	fmt.Scan(&namaPakan)
+	namaPakan = strings.ToUpper(strings.TrimSpace(namaPakan))
+
+	// Cari index pakan dengan binary search
+	idx := binarySearchPakanByNama(namaPakan)
+
+	if idx == -1 {
+		fmt.Println("Pakan tidak ditemukan.")
+		return
+	}
+
+	// Tampilkan stok saat ini
+	fmt.Printf("\nData pakan %s:\n", dataPakan[idx].nama)
+	fmt.Printf("Stok saat ini: %d\n", dataPakan[idx].stok)
+
+	// Loop input stok baru sampai valid (non-negatif integer)
+	for {
+		fmt.Print("Masukkan stok baru: ")
+		var input string
+		fmt.Scan(&input)
+		stokBaru := toInt(input)
+		if stokBaru == -1 {
+			fmt.Println("Input tidak valid. Masukkan angka bulat positif atau nol.")
+			continue
+		}
+		if stokBaru < 0 {
+			fmt.Println("Stok tidak boleh negatif.")
+			continue
+		}
+		// Update stok
+		dataPakan[idx].stok = stokBaru
+		fmt.Println("Stok pakan berhasil diperbarui.")
+		break
+	}
+}
+
+func hapusPakan() {
+	if jumlahPakan == 0 {
+		fmt.Println("Belum ada data pakan.")
+		return
+	}
+
+	// Fungsi internal untuk mengurutkan dataPakan berdasarkan nama pakan (Insertion Sort)
+	urutkanPakanByNama := func() {
+		for i := 1; i < jumlahPakan; i++ {
+			key := dataPakan[i]
+			j := i - 1
+			for j >= 0 && strings.ToUpper(dataPakan[j].nama) > strings.ToUpper(key.nama) {
+				dataPakan[j+1] = dataPakan[j]
+				j--
+			}
+			dataPakan[j+1] = key
+		}
+	}
+
+	// Fungsi internal binary search berdasarkan nama pakan (case-insensitive)
+	binarySearchPakanByNama := func(nama string) int {
+		low := 0
+		high := jumlahPakan - 1
+		nama = strings.ToUpper(nama)
+
+		for low <= high {
+			mid := (low + high) / 2
+			midNama := strings.ToUpper(dataPakan[mid].nama)
+
+			if midNama == nama {
+				return mid
+			} else if midNama < nama {
+				low = mid + 1
+			} else {
+				high = mid - 1
+			}
+		}
+		return -1
+	}
+
+	// Urutkan data pakan dulu
+	urutkanPakanByNama()
+
+	// Tampilkan data pakan
+	tampilkanPakan()
+
+	// Input nama pakan yang akan dihapus
+	var namaPakan string
+	fmt.Print("\nMasukkan nama pakan yang akan dihapus: ")
+	fmt.Scan(&namaPakan)
+	namaPakan = strings.ToUpper(strings.TrimSpace(namaPakan))
+
+	// Cari index pakan dengan binary search
+	idx := binarySearchPakanByNama(namaPakan)
+
+	if idx == -1 {
+		fmt.Println("Pakan tidak ditemukan.")
+		return
+	}
+
+	// Tampilkan data pakan yang akan dihapus
+	fmt.Printf("\nData pakan yang akan dihapus:\n")
+	fmt.Printf("%-15s %-10s\n", "Nama", "Stok")
+	fmt.Printf("%-15s %-10d\n", dataPakan[idx].nama, dataPakan[idx].stok)
+
+	// Konfirmasi hapus
+	var konfirmasi string
+	fmt.Print("\nApakah Anda yakin ingin menghapus data ini? (y/n): ")
+	fmt.Scan(&konfirmasi)
+
+	if strings.ToLower(konfirmasi) == "y" {
+		// Geser data pakan setelah idx ke kiri (hapus elemen idx)
+		for i := idx; i < jumlahPakan-1; i++ {
+			dataPakan[i] = dataPakan[i+1]
+		}
+		jumlahPakan--
+		fmt.Println("Data pakan berhasil dihapus.")
+	} else {
+		fmt.Println("Penghapusan dibatalkan.")
+	}
+}
+
+/* Insertion Sort */
 func urutkanPakanByHarga() {
 	if jumlahPakan == 0 {
 		fmt.Println("Belum ada data pakan.")
@@ -462,47 +791,6 @@ func urutkanPakanByHarga() {
 	tampilkanPakan()
 }
 
-func updateStokPakan() {
-	if jumlahPakan == 0 {
-		fmt.Println("Belum ada data pakan.")
-		return
-	}
-
-	tampilkanPakan()
-
-	var namaPakan string
-	fmt.Print("\nMasukkan nama pakan yang akan diupdate: ")
-	fmt.Scan(&namaPakan)
-
-	idx := -1
-	for i := 0; i < jumlahPakan; i++ {
-		if strings.EqualFold(dataPakan[i].nama, namaPakan) {
-			idx = i
-			break
-		}
-	}
-
-	if idx == -1 {
-		fmt.Println("Pakan tidak ditemukan.")
-		return
-	}
-
-	fmt.Printf("\nData pakan %s:\n", dataPakan[idx].nama)
-	fmt.Printf("Stok saat ini: %d\n", dataPakan[idx].stok)
-
-	var stokBaru int
-	fmt.Print("Masukkan stok baru: ")
-	fmt.Scan(&stokBaru)
-
-	if stokBaru < 0 {
-		fmt.Println("Stok tidak boleh negatif.")
-		return
-	}
-
-	dataPakan[idx].stok = stokBaru
-	fmt.Println("Stok pakan berhasil diperbarui.")
-}
-
 // ========== FUNGSI MANAJEMEN KESEHATAN ==========
 func tambahKesehatan() {
 	if jumlahKesehatan >= Maks {
@@ -511,32 +799,54 @@ func tambahKesehatan() {
 	}
 
 	if jumlahSapi == 0 {
-		fmt.Println("Belum ada data sapi. Silakan tambah sapi terlebih dahulu.")
+		fmt.Println("Belum ada data sapi. Silakan tambah data sapi terlebih dahulu.")
 		return
 	}
 
 	tampilkanSapi()
 
 	var kesehatan Kesehatan
-	fmt.Print("\nID Sapi: ")
+	fmt.Print("\nMasukkan ID sapi: ")
 	fmt.Scan(&kesehatan.idSapi)
+	kesehatan.idSapi = strings.ToUpper(strings.TrimSpace(kesehatan.idSapi))
 
-	// Cek apakah ID sapi ada
-	sapiAda := false
-	for i := 0; i < jumlahSapi; i++ {
-		if dataSapi[i].id == kesehatan.idSapi {
-			sapiAda = true
-			break
+	// Urutkan data sapi berdasarkan ID terlebih dahulu (Insertion Sort)
+	for i := 1; i < jumlahSapi; i++ {
+		key := dataSapi[i]
+		j := i - 1
+		for j >= 0 && strings.ToUpper(dataSapi[j].id) > strings.ToUpper(key.id) {
+			dataSapi[j+1] = dataSapi[j]
+			j--
+		}
+		dataSapi[j+1] = key
+	}
+
+	// Binary search ID sapi
+	idx := -1
+	low := 0
+	high := jumlahSapi - 1
+	for low <= high {
+		mid := (low + high) / 2
+		midID := strings.ToUpper(dataSapi[mid].id)
+		if midID == kesehatan.idSapi {
+			idx = mid
+			low = high + 1 // keluar loop tanpa break
+		} else if midID < kesehatan.idSapi {
+			low = mid + 1
+		} else {
+			high = mid - 1
 		}
 	}
 
-	if !sapiAda {
+	if idx == -1 {
 		fmt.Println("ID sapi tidak ditemukan.")
 		return
 	}
 
-	fmt.Print("Tanggal (dd/mm/yyyy): ")
-	fmt.Scan(&kesehatan.tanggal)
+	// Tanggal otomatis (format: dd/mm/yyyy)
+	kesehatan.tanggal = time.Now().Format("02/01/2006")
+	fmt.Println("Tanggal otomatis diisi:", kesehatan.tanggal)
+
 	fmt.Print("Diagnosa: ")
 	fmt.Scan(&kesehatan.diagnosa)
 
@@ -547,7 +857,7 @@ func tambahKesehatan() {
 
 func tampilkanKesehatan() {
 	if jumlahKesehatan == 0 {
-		fmt.Println("Belum ada data kesehatan.")
+		fmt.Println("Belum ada data catatan kesehatan.")
 		return
 	}
 
@@ -557,6 +867,127 @@ func tampilkanKesehatan() {
 		fmt.Printf("%-8s %-12s %-30s\n",
 			dataKesehatan[i].idSapi, dataKesehatan[i].tanggal, dataKesehatan[i].diagnosa)
 	}
+}
+
+func editKesehatan() {
+	if jumlahKesehatan == 0 {
+		fmt.Println("Belum ada data kesehatan.")
+		return
+	}
+
+	// Insertion Sort berdasarkan idSapi
+	for i := 1; i < jumlahKesehatan; i++ {
+		key := dataKesehatan[i]
+		j := i - 1
+		for j >= 0 && strings.ToUpper(dataKesehatan[j].idSapi) > strings.ToUpper(key.idSapi) {
+			dataKesehatan[j+1] = dataKesehatan[j]
+			j--
+		}
+		dataKesehatan[j+1] = key
+	}
+
+	var id string
+	fmt.Print("Masukkan ID sapi yang catatan kesehatannya akan diedit: ")
+	fmt.Scan(&id)
+	id = strings.ToUpper(strings.TrimSpace(id))
+
+	// Binary Search
+	idx := -1
+	low := 0
+	high := jumlahKesehatan - 1
+	for low <= high {
+		mid := (low + high) / 2
+		midID := strings.ToUpper(dataKesehatan[mid].idSapi)
+		if midID == id {
+			idx = mid
+			low = high + 1
+		} else if midID < id {
+			low = mid + 1
+		} else {
+			high = mid - 1
+		}
+	}
+
+	if idx == -1 {
+		fmt.Println("Catatan kesehatan tidak ditemukan.")
+		return
+	}
+
+	fmt.Println("Data saat ini:")
+	fmt.Printf("ID Sapi: %s\n", dataKesehatan[idx].idSapi)
+	fmt.Printf("Tanggal: %s\n", dataKesehatan[idx].tanggal)
+	fmt.Printf("Diagnosa: %s\n", dataKesehatan[idx].diagnosa)
+
+	var input string
+
+	fmt.Print("Tanggal baru (ketik '-' jika tidak diubah): ")
+	fmt.Scan(&input)
+	input = strings.TrimSpace(input)
+	if input != "-" && input != "" {
+		dataKesehatan[idx].tanggal = input
+	}
+
+	fmt.Print("Diagnosa baru (ketik '-' jika tidak diubah): ")
+	fmt.Scan(&input)
+	input = strings.TrimSpace(input)
+	if input != "-" && input != "" {
+		dataKesehatan[idx].diagnosa = input
+	}
+
+	fmt.Println("Data kesehatan berhasil diperbarui.")
+}
+
+func hapusKesehatan() {
+	if jumlahKesehatan == 0 {
+		fmt.Println("Belum ada data kesehatan.")
+		return
+	}
+
+	// Insertion Sort berdasarkan idSapi
+	for i := 1; i < jumlahKesehatan; i++ {
+		key := dataKesehatan[i]
+		j := i - 1
+		for j >= 0 && strings.ToUpper(dataKesehatan[j].idSapi) > strings.ToUpper(key.idSapi) {
+			dataKesehatan[j+1] = dataKesehatan[j]
+			j--
+		}
+		dataKesehatan[j+1] = key
+	}
+
+	var id string
+	fmt.Print("Masukkan ID sapi yang catatan kesehatannya akan dihapus: ")
+	fmt.Scan(&id)
+	id = strings.ToUpper(strings.TrimSpace(id))
+
+	// Binary Search
+	idx := -1
+	low := 0
+	high := jumlahKesehatan - 1
+	for low <= high {
+		mid := (low + high) / 2
+		midID := strings.ToUpper(dataKesehatan[mid].idSapi)
+		if midID == id {
+			idx = mid
+			low = high + 1
+		} else if midID < id {
+			low = mid + 1
+		} else {
+			high = mid - 1
+		}
+	}
+
+	if idx == -1 {
+		fmt.Println("Catatan kesehatan tidak ditemukan.")
+		return
+	}
+
+	// Geser data ke kiri
+	for i := idx; i < jumlahKesehatan-1; i++ {
+		dataKesehatan[i] = dataKesehatan[i+1]
+	}
+	jumlahKesehatan--
+
+	fmt.Println("Data kesehatan berhasil dihapus.")
 }
 
 func lihatRiwayatKesehatanSapi() {
@@ -570,13 +1001,13 @@ func lihatRiwayatKesehatanSapi() {
 	var idSapi string
 	fmt.Print("\nMasukkan ID sapi: ")
 	fmt.Scan(&idSapi)
+	idSapi = strings.ToUpper(strings.TrimSpace(idSapi))
 
 	// Cek apakah ID sapi ada
 	sapiAda := false
 	for i := 0; i < jumlahSapi; i++ {
-		if dataSapi[i].id == idSapi {
+		if strings.EqualFold(dataSapi[i].id, idSapi) {
 			sapiAda = true
-			break
 		}
 	}
 
@@ -589,9 +1020,8 @@ func lihatRiwayatKesehatanSapi() {
 	fmt.Printf("%-12s %-30s\n", "Tanggal", "Diagnosa")
 	found := false
 	for i := 0; i < jumlahKesehatan; i++ {
-		if dataKesehatan[i].idSapi == idSapi {
-			fmt.Printf("%-12s %-30s\n",
-				dataKesehatan[i].tanggal, dataKesehatan[i].diagnosa)
+		if strings.EqualFold(dataKesehatan[i].idSapi, idSapi) {
+			fmt.Printf("%-12s %-30s\n", dataKesehatan[i].tanggal, dataKesehatan[i].diagnosa)
 			found = true
 		}
 	}
@@ -601,22 +1031,28 @@ func lihatRiwayatKesehatanSapi() {
 	}
 }
 
-// ========== MAIN ==========
-func main() {
-	// Data dummy untuk testing
-	dataSapi[0] = Sapi{"S001", "Budi", 250, "Siap Potong"}
-	dataSapi[1] = Sapi{"S002", "Lani", 150, "Grower"}
-	dataSapi[2] = Sapi{"S003", "Momo", 80, "Pedet"}
+func buatDataDummy() {
+	// Data sapi dummy
+	dataSapi[0] = Sapi{"S001", "Limousin", 120, "grower"}
+	dataSapi[1] = Sapi{"S002", "Putih", 80, "pedet"}
+	dataSapi[2] = Sapi{"S003", "Hitam", 210, "siap potong"}
 	jumlahSapi = 3
 
-	dataPakan[0] = Pakan{"Rumput Gajah", 5000, 100}
-	dataPakan[1] = Pakan{"Konsentrat", 12000, 50}
-	dataPakan[2] = Pakan{"Jerami", 3000, 200}
+	// Data kesehatan dummy
+	dataKesehatan[0] = Kesehatan{"S001", "01/05/2025", "Sehat"}
+	dataKesehatan[1] = Kesehatan{"S001", "15/05/2025", "Demam ringan"}
+	dataKesehatan[2] = Kesehatan{"S003", "10/05/2025", "Cacingan"}
+	jumlahKesehatan = 3
+
+	// Data pakan dummy
+	dataPakan[0] = Pakan{"Rumput", 20000, 50}
+	dataPakan[1] = Pakan{"Jagung", 10000, 30}
+	dataPakan[2] = Pakan{"Dedak", 30000, 20}
 	jumlahPakan = 3
+}
 
-	dataKesehatan[0] = Kesehatan{"S001", "01/01/2023", "Sehat"}
-	dataKesehatan[1] = Kesehatan{"S002", "15/01/2023", "Flu ringan"}
-	jumlahKesehatan = 2
-
+/* Menu Utama */
+func main() {
+	// buatDataDummy()
 	menuUtama()
 }
