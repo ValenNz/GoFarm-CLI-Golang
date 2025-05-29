@@ -15,13 +15,11 @@ type Sapi struct {
 	berat  int
 	status string
 }
-
 type Pakan struct {
 	nama  string
 	harga int
 	stok  int
 }
-
 type Kesehatan struct {
 	idSapi   string
 	tanggal  string
@@ -39,7 +37,7 @@ var jumlahPakan int
 var dataKesehatan [Maks]Kesehatan
 var jumlahKesehatan int
 
-// ========== MENU UTAMA DAN SUBMENU ==========
+/* ========== MENU UTAMA DAN SUBMENU ========== */
 func menuUtama() {
 	var pilihan int
 	for {
@@ -141,6 +139,7 @@ func menuManajemenKesehatan() {
 		fmt.Println("[1] Tambah Catatan Kesehatan")
 		fmt.Println("[2] Tampilkan Semua Catatan Kesehatan")
 		fmt.Println("[3] Lihat Riwayat Kesehatan Sapi")
+		fmt.Println("[4] Lihat Riwayat Kesehatan Sapi")
 		fmt.Println("[0] Kembali")
 		fmt.Print("Pilih menu: ")
 		fmt.Scan(&pilihan)
@@ -150,6 +149,10 @@ func menuManajemenKesehatan() {
 		} else if pilihan == 2 {
 			tampilkanKesehatan()
 		} else if pilihan == 3 {
+			editKesehatan()
+		} else if pilihan == 4 {
+			hapusKesehatan()
+		} else if pilihan == 5 {
 			lihatRiwayatKesehatanSapi()
 		} else if pilihan == 0 {
 			return
@@ -159,7 +162,9 @@ func menuManajemenKesehatan() {
 	}
 }
 
-// ========== FUNGSI MANAJEMEN SAPI ==========
+/* ========== FUNGSI MANAJEMEN SAPI ========== */
+
+/* Create Data Sapi*/
 func tambahSapi() {
 	if jumlahSapi >= Maks {
 		fmt.Println("Kapasitas data sapi penuh.")
@@ -181,7 +186,6 @@ func tambahSapi() {
 	fmt.Print("Nama: ")
 	fmt.Scan(&sapi.nama)
 
-	// Validasi berat dengan loop sampai input valid
 	for {
 		fmt.Print("Berat (kg): ")
 		fmt.Scan(&sapi.berat)
@@ -192,13 +196,12 @@ func tambahSapi() {
 		}
 	}
 
-	// Tentukan status berdasarkan berat
 	if sapi.berat < 100 {
 		sapi.status = "pedet"
 	} else if sapi.berat < 250 {
 		sapi.status = "grower"
 	} else {
-		sapi.status = "siap potong"
+		sapi.status = "siap_potong"
 	}
 
 	dataSapi[jumlahSapi] = sapi
@@ -206,6 +209,7 @@ func tambahSapi() {
 	fmt.Println("Data sapi berhasil ditambahkan.")
 }
 
+/* Read Data Sapi*/
 func tampilkanSapi() {
 	if jumlahSapi == 0 {
 		fmt.Println("Belum ada data sapi.")
@@ -220,43 +224,54 @@ func tampilkanSapi() {
 	}
 }
 
-/* Insertion Sort Dan Binary Search*/
+/* Update Data Sapi*/
 func editSapi() {
 	if jumlahSapi == 0 {
 		fmt.Println("Belum ada data sapi.")
 		return
 	}
 
+	/* Program Insertion Sort */
+	/*
+		membesar
+		Bandingkan key dengan elemen sebelumnya, lalu geser elemen yang lebih besar ke kanan,
+		hingga menemukan posisi yang tepat untuk menyisipkan key.
+	*/
 	urutkanSapiByID := func() {
 		for i := 1; i < jumlahSapi; i++ {
-			key := dataSapi[i]
-			j := i - 1
+			key := dataSapi[i] // Menyimpan data sapi yang akan dibandingkan (disisipkan ke tempat yang sesuai).
+			j := i - 1         // inisialisasi variabel pembanding yang menunjuk ke elemen sebelum key.
 			for j >= 0 && strings.ToUpper(dataSapi[j].id) > strings.ToUpper(key.id) {
-				dataSapi[j+1] = dataSapi[j]
-				j--
+				/*
+					Periksa apakah ID sapi sebelumnya lebih besar dari key.id.
+					Gunakan strings.ToUpper() agar pencocokan huruf besar kecil tidak masalah (case-insensitive).
+				*/
+				dataSapi[j+1] = dataSapi[j] // Geser elemen yang lebih besar ke kanan untuk memberi ruang bagi key.
+				j--                         // Bergerak ke elemen sebelumnya.
 			}
-			dataSapi[j+1] = key
+			dataSapi[j+1] = key // Tempatkan key di posisi yang sesuai setelah pergeseran selesai.
 		}
 	}
 
+	/* Program Binary Search */
 	binarySearchSapiByID := func(id string) int {
 		low := 0
-		high := jumlahSapi - 1
-		id = strings.ToUpper(id)
+		high := jumlahSapi - 1   // Menentukan batas bawah (low) dan atas (high) dari pencarian.
+		id = strings.ToUpper(id) //  Konversi ID input ke huruf besar supaya cocok dengan data yang juga dibandingkan dalam uppercase.
 
-		for low <= high {
-			mid := (low + high) / 2
-			midID := strings.ToUpper(dataSapi[mid].id)
+		for low <= high { // Loop selama batas bawah tidak melebihi batas atas.
+			mid := (low + high) / 2                    //  Tentukan indeks tengah dari area pencarian.
+			midID := strings.ToUpper(dataSapi[mid].id) // Ambil ID sapi di indeks tengah dan ubah ke huruf besar.
 
-			if midID == id {
+			if midID == id { //  Jika ID cocok → kembalikan indeks mid (berhasil ditemukan).
 				return mid
-			} else if midID < id {
+			} else if midID < id { //  Jika ID tengah lebih kecil dari yang dicari, cari ke kanan (low = mid + 1).
 				low = mid + 1
-			} else {
+			} else { // Jika ID tengah lebih besar, cari ke kiri (high = mid - 1).
 				high = mid - 1
 			}
 		}
-		return -1
+		return -1 // Jika keluar dari loop dan tidak ditemukan, kembalikan -1.
 	}
 
 	// konversi string ke int manual, return -1 jika ada karakter bukan digit
@@ -329,7 +344,7 @@ func editSapi() {
 		} else if beratBaru < 200 {
 			dataSapi[idx].status = "grower"
 		} else {
-			dataSapi[idx].status = "siap potong"
+			dataSapi[idx].status = "siap_potong"
 		}
 		break
 	}
@@ -337,13 +352,13 @@ func editSapi() {
 	fmt.Println("Data sapi berhasil diperbarui.")
 }
 
+/* Delete Data Sapi */
 func hapusSapi() {
 	if jumlahSapi == 0 {
 		fmt.Println("Belum ada data sapi.")
 		return
 	}
 
-	// Fungsi internal untuk mengurutkan dataSapi berdasarkan ID (Insertion Sort)
 	urutkanSapiByID := func() {
 		for i := 1; i < jumlahSapi; i++ {
 			key := dataSapi[i]
@@ -356,7 +371,6 @@ func hapusSapi() {
 		}
 	}
 
-	// Fungsi internal binary search tanpa break
 	binarySearchSapiByID := func(id string) int {
 		low := 0
 		high := jumlahSapi - 1
@@ -426,7 +440,7 @@ func hapusSapi() {
 	}
 }
 
-/* Selection Sort */
+/* Urutkan Sapi By Berat*/
 func urutkanSapiByBerat() {
 	if jumlahSapi == 0 {
 		fmt.Println("Belum ada data sapi.")
@@ -437,22 +451,24 @@ func urutkanSapiByBerat() {
 	fmt.Print("Urutkan Ascending (1) atau Descending (0)? ")
 	fmt.Scan(&asc)
 
-	for i := 0; i < jumlahSapi-1; i++ {
-		extremeIdx := i
-		for j := i + 1; j < jumlahSapi; j++ {
-			if (asc == 1 && dataSapi[j].berat < dataSapi[extremeIdx].berat) ||
-				(asc == 0 && dataSapi[j].berat > dataSapi[extremeIdx].berat) {
-				extremeIdx = j
+	/* Selection Sort */
+	for i := 0; i < jumlahSapi-1; i++ { // Loop dari indeks pertama sampai sebelum terakhir
+		extremeIdx := i // Asumsikan posisi i sebagai indeks nilai terkecil/terbesar
+
+		for j := i + 1; j < jumlahSapi; j++ { // Cari nilai terkecil/terbesar di sisa array
+			if (asc == 1 && dataSapi[j].berat < dataSapi[extremeIdx].berat) || // Jika ascending dan data j lebih kecil
+				(asc == 0 && dataSapi[j].berat > dataSapi[extremeIdx].berat) { // Jika descending dan data j lebih besar
+				extremeIdx = j // Update indeks nilai terkecil/terbesar
 			}
 		}
-		dataSapi[i], dataSapi[extremeIdx] = dataSapi[extremeIdx], dataSapi[i]
+		dataSapi[i], dataSapi[extremeIdx] = dataSapi[extremeIdx], dataSapi[i] // Tukar posisi elemen di i dan extremeIdx
 	}
 
 	fmt.Println("Data sapi telah diurutkan.")
 	tampilkanSapi()
 }
 
-/*  Sequential Search */
+/*  Cari Sapi By Id */
 func cariSapiByID() {
 	if jumlahSapi == 0 {
 		fmt.Println("Belum ada data sapi.")
@@ -468,11 +484,12 @@ func cariSapiByID() {
 	fmt.Println("\nHasil pencarian:")
 	fmt.Printf("%-8s %-15s %-8s %-15s\n", "ID", "Nama", "Berat", "Status")
 
-	for i := 0; i < jumlahSapi; i++ {
-		if strings.ToUpper(dataSapi[i].id) == id {
+	/* Program Sequental Search */
+	for i := 0; i < jumlahSapi; i++ { //Loop dari awal hingga akhir array dataSapi.
+		if strings.ToUpper(dataSapi[i].id) == id { // Setiap dataSapi[i].id diubah ke huruf besar, lalu dibandingkan dengan input id.
 			fmt.Printf("%-8s %-15s %-8d %-15s\n",
 				dataSapi[i].id, dataSapi[i].nama, dataSapi[i].berat, dataSapi[i].status)
-			found = true
+			found = true // Jika cocok, maka data sapi akan ditampilkan, dan found di-set ke true.
 		}
 	}
 
@@ -489,13 +506,14 @@ func cariSapiByStatus() {
 	}
 
 	var status string
-	fmt.Print("Masukkan status (Pedet/Grower/Siap Potong): ")
+	fmt.Print("Masukkan status (Pedet/Grower/Siap_Potong): ")
 	fmt.Scan(&status)
 	status = strings.ToLower(status)
 
 	fmt.Printf("\nDaftar Sapi dengan status '%s':\n", status)
 	fmt.Printf("%-8s %-15s %-8s\n", "ID", "Nama", "Berat")
 	found := false
+	/* Sequental Search */
 	for i := 0; i < jumlahSapi; i++ {
 		if strings.ToLower(dataSapi[i].status) == status {
 			fmt.Printf("%-8s %-15s %-8d\n",
@@ -765,7 +783,7 @@ func hapusPakan() {
 	}
 }
 
-/* Insertion Sort */
+/* Selection Sort */
 func urutkanPakanByHarga() {
 	if jumlahPakan == 0 {
 		fmt.Println("Belum ada data pakan.")
@@ -1035,7 +1053,7 @@ func buatDataDummy() {
 	// Data sapi dummy
 	dataSapi[0] = Sapi{"S001", "Limousin", 120, "grower"}
 	dataSapi[1] = Sapi{"S002", "Putih", 80, "pedet"}
-	dataSapi[2] = Sapi{"S003", "Hitam", 210, "siap potong"}
+	dataSapi[2] = Sapi{"S003", "Hitam", 210, "Siap_Potong"}
 	jumlahSapi = 3
 
 	// Data kesehatan dummy
